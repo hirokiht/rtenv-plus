@@ -19,6 +19,8 @@ STM32_LIB=$(LIBDIR)/libraries/STM32F10x_StdPeriph_Driver
 
 CMSIS_PLAT_SRC = $(CMSIS_LIB)/DeviceSupport/$(VENDOR)/$(PLAT)
 
+export PATH := /usr/local/csl/arm-2012.03/bin:$(PATH)
+
 
 OUTDIR = build
 SRCDIR = src \
