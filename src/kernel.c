@@ -37,6 +37,9 @@ char cmd[HISTORY_COUNT][CMDBUF_SIZE];
 int cur_his=0;
 int fdout;
 int fdin;
+void (*userProgram)(int, char**) = NULL;
+int argC = 0;
+char ** argV = NULL;
 
 void check_keyword();
 void find_events();
@@ -52,6 +55,7 @@ void show_task_info(int argc, char *argv[]);
 void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
 void show_xxd(int argc, char *argv[]);
+void exec_program(int argc, char *argv[]);
 
 /* Enumeration for command types. */
 enum {
@@ -62,6 +66,7 @@ enum {
 	CMD_MAN,
 	CMD_PS,
 	CMD_XXD,
+	CMD_EXEC,
 	CMD_COUNT
 } CMD_TYPE;
 /* Structure for command handler. */
@@ -78,6 +83,7 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
 	[CMD_XXD] = {.cmd = "xxd", .func = show_xxd, .description = "Make a hexdump."},
+	[CMD_EXEC] = {.cmd = "exec", .func = exec_program, .description = "Execute user program."}
 };
 
 /* Structure for environment variables. */
@@ -135,11 +141,7 @@ void serialin(USART_TypeDef* uart, unsigned int intr)
 void greeting()
 {
 	int fdout = open("/dev/tty0/out", 0);
-	char *string = "Hello, World!\n";
-	while (*string) {
-		write(fdout, string, 1);
-		string++;
-	}
+	write(fdout, "Hello, World!\n\r", 15);
 }
 
 void echo()
@@ -284,7 +286,7 @@ void serial_test_task()
 				write(fdout, put_ch, 2);
 			}
 		}
-		check_keyword();	
+		check_keyword();
 	}
 }
 
@@ -330,14 +332,9 @@ void check_keyword()
 	if (!argv[0])
 		return;
 
-	while (1) {
-		argv[argc] = cmdtok(NULL);
-		if (!argv[argc])
+	for(argc = 1 ; argv[argc-1] && argc < MAX_ARGC ; argc++)
+		if(!(argv[argc] = cmdtok(NULL)))
 			break;
-		argc++;
-		if (argc >= MAX_ARGC)
-			break;
-	}
 
 	for (i = 0; i < CMD_COUNT; i++) {
 		if (!strcmp(argv[0], cmd_data[i].cmd)) {
@@ -373,6 +370,18 @@ void find_events()
 					break;
 				}
 			}
+		}
+	}
+}
+
+void loader(){
+	for(;;){
+		if(userProgram != NULL){
+			userProgram(argC,argV);
+			argC = 0;
+			userProgram = NULL;
+			argV = NULL;
+			setpriority(7, PRIORITY_DEFAULT-10);	//restore the serial_test_task priority
 		}
 	}
 }
@@ -583,6 +592,19 @@ void show_history(int argc, char *argv[])
 	}
 }
 
+void exec_program(int argc, char *argv[]){
+	if(argc != 2){
+		write(fdout, "No Program found!\n\r\0",20);
+		return;
+	}
+	if(!strcmp(argv[1],"greeting")){
+		argC = 0;
+		argV = NULL;
+		userProgram = greeting;
+		setpriority(7, PRIORITY_LIMIT);	//let program execute first before return to prompt user input
+	}else write(fdout, "Program not found!\n\r\0",21);
+}
+
 void write_blank(int blank_num)
 {
 	char blank[] = " ";
@@ -715,6 +737,7 @@ void first()
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_test_task();
+	if (!fork()) setpriority(0,PRIORITY_DEFAULT), loader();
 
 	setpriority(0, PRIORITY_LIMIT);
 
