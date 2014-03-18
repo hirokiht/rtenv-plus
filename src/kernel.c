@@ -26,8 +26,8 @@
 
 void *malloc(size_t size)
 {
-	static char m[256] = {0};
-	return m;
+	static char m = '\0';
+	return &m;
 }
 
 /*Global Variables*/
@@ -56,6 +56,19 @@ void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
 void show_xxd(int argc, char *argv[]);
 void exec_program(int argc, char *argv[]);
+
+/* Enumeration for command types. */
+enum {
+	CMD_ECHO = 0,
+	CMD_EXPORT,
+	CMD_HELP,
+	CMD_HISTORY,
+	CMD_MAN,
+	CMD_PS,
+	CMD_XXD,
+	CMD_EXEC,
+	CMD_COUNT
+} CMD_TYPE;
 
 /* Structure for command handler. */
 typedef struct {
@@ -633,7 +646,7 @@ void show_xxd(int argc, char *argv[])
     if (argc == 1) { /* fallback to stdin */
         readfd = fdin;
     }
-    else { /* open file of argv[1] */
+    else if(argc == 2){ /* open file of argv[1] */
         readfd = open(argv[1], 0);
 
         if (readfd < 0) { /* Open error */
@@ -642,8 +655,7 @@ void show_xxd(int argc, char *argv[])
             write(fdout, ": No such file or directory\r\n", 31);
             return;
         }
-    }
-
+    }else return;
     lseek(readfd, 0, SEEK_SET);
     while ((size = read(readfd, &ch, sizeof(ch))) && size != -1) {
         if (ch != -1 && ch != 0x04) { /* has something read */

@@ -15,19 +15,6 @@
 #define MAX_ENVNAME 15
 #define MAX_ENVVALUE 63
 
-/* Enumeration for command types. */
-typedef enum {
-	CMD_ECHO = 0,
-	CMD_EXPORT,
-	CMD_HELP,
-	CMD_HISTORY,
-	CMD_MAN,
-	CMD_PS,
-	CMD_XXD,
-	CMD_EXEC,
-	CMD_COUNT
-} CMD_TYPE;
-
 /* Structure for environment variables. */
 typedef struct {
 	char name[MAX_ENVNAME + 1];
