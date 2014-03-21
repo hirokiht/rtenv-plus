@@ -370,9 +370,6 @@ void find_events()
 	}
 }
 
-void loader(){
-}
-
 char *find_envvar(const char *name)
 {
 	int i;
@@ -723,7 +720,6 @@ void first()
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_test_task();
-	if (!fork()) setpriority(0,PRIORITY_DEFAULT), loader();
 
 	setpriority(0, PRIORITY_LIMIT);
 
