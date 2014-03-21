@@ -56,6 +56,7 @@ void show_man_page(int argc, char *argv[]);
 void show_history(int argc, char *argv[]);
 void show_xxd(int argc, char *argv[]);
 void exec_program(int argc, char *argv[]);
+void show_cat(int argc, char *argv[]);
 
 /* Enumeration for command types. */
 enum {
@@ -67,6 +68,7 @@ enum {
 	CMD_PS,
 	CMD_XXD,
 	CMD_EXEC,
+	CMD_CAT,
 	CMD_COUNT
 } CMD_TYPE;
 
@@ -84,7 +86,8 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_MAN] = {.cmd = "man", .func = show_man_page, .description = "Manual pager."},
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
 	[CMD_XXD] = {.cmd = "xxd", .func = show_xxd, .description = "Make a hexdump."},
-	[CMD_EXEC] = {.cmd = "exec", .func = exec_program, .description = "Execute user program."}
+	[CMD_EXEC] = {.cmd = "exec", .func = exec_program, .description = "Execute user program."},
+	[CMD_CAT] = {.cmd = "cat", .func = show_cat, .description = "Concatenate files and print on the standard output"}
 };
 
 evar_entry env_var[MAX_ENVCOUNT];
@@ -707,6 +710,31 @@ void show_xxd(int argc, char *argv[])
         }
 
         write(fdout, "\r\n", 3);
+    }
+}
+
+void show_cat(int argc, char *argv[]){
+	int readfd = -1, i;
+	char buf[2] = {'\0'}, prev = '\0';
+	
+	if(argc <= 0)
+		return;
+	else if(argc == 1) /* fallback to stdin */
+        readfd = fdin;
+    else for(i = 1 ; i < argc ; i++){ /* open file of argv[1] */
+        if ((readfd = open(argv[i], 0)) < 0) { /* Open error */
+            write(fdout, "cat: ", 6);
+            write(fdout, argv[1], strlen(argv[1]) + 1);
+            write(fdout, ": No such file or directory\r\n", 31);
+            return;
+        }
+	    for(lseek(readfd,0, SEEK_SET) ; read(readfd, &buf, sizeof(char))>0 && buf[0]>0 && buf[0]!=0x04 && buf[0]!=0x03 ; prev = buf[0]){
+			if(prev == '\n' && buf[0] != '\r')
+				write(fdout, "\r", 2);
+			write(fdout,buf,2); 
+    	}
+    	if(prev == '\n')
+    		write(fdout, "\r", 2);
     }
 }
 
