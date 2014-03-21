@@ -725,7 +725,7 @@ void first()
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_test_task();
 	if (!fork()) setpriority(0,PRIORITY_DEFAULT), loader();
 
-//	setpriority(0, PRIORITY_LIMIT);
+	setpriority(0, PRIORITY_LIMIT);
 
 	mount("/dev/rom0", "/", ROMFS_TYPE, 0);
 
@@ -823,7 +823,7 @@ int main()
 		tasks[current_task].status = TASK_READY;
 		timeup = 0;
 
-		switch (tasks[current_task].stack->r8) {
+		switch (tasks[current_task].stack->r7) {
 		case 0x1: /* fork */
 			if (task_count == TASK_LIMIT) {
 				/* Cannot create a new task, return error */
@@ -974,8 +974,8 @@ int main()
 			    }
 			} break;
 		default: /* Catch all interrupts */
-			if ((int)tasks[current_task].stack->r8 < 0) {
-				unsigned int intr = -tasks[current_task].stack->r8 - 16;
+			if ((int)tasks[current_task].stack->r7 < 0) {
+				unsigned int intr = -tasks[current_task].stack->r7 - 16;
 
 				if (intr == SysTick_IRQn) {
 					/* Never disable timer. We need it for pre-emption */
