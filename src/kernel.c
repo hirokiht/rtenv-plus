@@ -371,15 +371,6 @@ void find_events()
 }
 
 void loader(){
-	for(;;){
-		if(userProgram != NULL){
-			userProgram(argC,argV);
-			argC = 0;
-			userProgram = NULL;
-			argV = NULL;
-			setpriority(7, PRIORITY_DEFAULT-10);	//restore the serial_test_task priority
-		}
-	}
 }
 
 char *find_envvar(const char *name)
@@ -734,11 +725,21 @@ void first()
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_test_task();
 	if (!fork()) setpriority(0,PRIORITY_DEFAULT), loader();
 
-	setpriority(0, PRIORITY_LIMIT);
+//	setpriority(0, PRIORITY_LIMIT);
 
 	mount("/dev/rom0", "/", ROMFS_TYPE, 0);
 
-	while(1);
+	setpriority(0, PRIORITY_DEFAULT);
+	for(;;){
+		if(userProgram != NULL){
+			userProgram(argC,argV);
+			argC = 0;
+			userProgram = NULL;
+			argV = NULL;
+			setpriority(7, PRIORITY_DEFAULT-10);	//restore the serial_test_task priority
+		}
+	}
+//	while(1);
 }
 
 #define INTR_EVENT(intr) (FILE_LIMIT + (intr) + 15) /* see INTR_LIMIT */
