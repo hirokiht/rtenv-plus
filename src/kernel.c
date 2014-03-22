@@ -57,6 +57,7 @@ void show_history(int argc, char *argv[]);
 void show_xxd(int argc, char *argv[]);
 void exec_program(int argc, char *argv[]);
 void show_cat(int argc, char *argv[]);
+void show_ls(int argc, char *argv[]);
 
 /* Enumeration for command types. */
 enum {
@@ -69,6 +70,7 @@ enum {
 	CMD_XXD,
 	CMD_EXEC,
 	CMD_CAT,
+	CMD_LS,
 	CMD_COUNT
 } CMD_TYPE;
 
@@ -87,7 +89,8 @@ const hcmd_entry cmd_data[CMD_COUNT] = {
 	[CMD_PS] = {.cmd = "ps", .func = show_task_info, .description = "List all the processes."},
 	[CMD_XXD] = {.cmd = "xxd", .func = show_xxd, .description = "Make a hexdump."},
 	[CMD_EXEC] = {.cmd = "exec", .func = exec_program, .description = "Execute user program."},
-	[CMD_CAT] = {.cmd = "cat", .func = show_cat, .description = "Concatenate files and print on the standard output"}
+	[CMD_CAT] = {.cmd = "cat", .func = show_cat, .description = "Concatenate files and print on the standard output"},
+	[CMD_LS] = {.cmd = "ls", .func = show_ls, .description = "List directory contents"}
 };
 
 evar_entry env_var[MAX_ENVCOUNT];
@@ -735,6 +738,30 @@ void show_cat(int argc, char *argv[]){
     		write(fdout, "\n\r", 3);
     	if(argc == 1)
     		break;
+    }
+}
+
+void show_ls(int argc, char *argv[]){
+	int device = open("/dev/rom0",0), pos;
+	
+	struct romfs_entry entry;
+    /* Get root entry */
+    lseek(device, 0, SEEK_SET);
+    read(device, &entry, sizeof(struct romfs_entry));
+	if(!entry.isdir){
+		write(fdout,"Root filesystem error!!!\n\r",27);
+		return;
+	}
+	pos = romfs_open(device,"testdir2",&entry);
+	if(!entry.isdir){
+		write(fdout,"Selected file is not directory!\n\r",34);
+		return;
+	}
+    for(pos += sizeof(struct romfs_entry) ; pos ; pos = entry.next){
+    	lseek(device, pos, SEEK_SET);
+    	read(device, &entry, sizeof(struct romfs_entry));
+    	write(fdout,entry.name,strlen((char*)entry.name)+1);
+    	write(fdout,"\n\r",3);
     }
 }
 

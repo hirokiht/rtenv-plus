@@ -23,6 +23,8 @@ struct romfs_entry {
     uint8_t name[PATH_MAX];
 };
 
+
+int romfs_open(int device, char *path, struct romfs_entry *entry);
 void romfs_server();
 
 #endif
