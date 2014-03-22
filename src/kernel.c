@@ -742,7 +742,7 @@ void show_cat(int argc, char *argv[]){
 }
 
 void show_ls(int argc, char *argv[]){
-	int device = open("/dev/rom0",0), pos;
+	int device = open("/dev/rom0",0), pos, i;
 	
 	struct romfs_entry entry;
     /* Get root entry */
@@ -752,16 +752,34 @@ void show_ls(int argc, char *argv[]){
 		write(fdout,"Root filesystem error!!!\n\r",27);
 		return;
 	}
-	pos = romfs_open(device,"testdir2",&entry);
-	if(!entry.isdir){
-		write(fdout,"Selected file is not directory!\n\r",34);
-		return;
-	}
-    for(pos += sizeof(struct romfs_entry) ; pos ; pos = entry.next){
-    	lseek(device, pos, SEEK_SET);
-    	read(device, &entry, sizeof(struct romfs_entry));
-    	write(fdout,entry.name,strlen((char*)entry.name)+1);
-    	write(fdout,"\n\r",3);
+	for(i = 1 ; i < argc || argc == 1 ; i++){
+		if(argv[i][0] == '\\')
+			argv[i]++;
+		pos = argc == 1? 0 : romfs_open(device,argv[i],&entry);
+		if(pos == -1){
+			write(fdout,argv[i],strlen(argv[i])+1);
+			write(fdout," not found!\n\r",14);
+			continue;
+		}else if(!entry.isdir){
+			write(fdout,argv[i],strlen(argv[i])+1);
+			write(fdout," is not directory!\n\r",34);
+			continue;
+		}
+		if(argc > 2){
+			write(fdout,argv[i],strlen(argv[i])+1);
+			write(fdout,":\n\r",4);
+		}
+		if(entry.len)	//not empty directory
+			for(pos += sizeof(struct romfs_entry) ; pos ; pos = entry.next){
+				lseek(device, pos, SEEK_SET);
+				read(device, &entry, sizeof(struct romfs_entry));
+				write(fdout,entry.name,strlen((char*)entry.name)+1);
+				write(fdout,"\n\r",3);
+			}
+		if(argc > 2 && i != argc-1)
+			write(fdout,"\n",2);
+		if(argc == 1)
+			break;
     }
 }
 
