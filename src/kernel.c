@@ -261,11 +261,12 @@ void serial_test_task()
 	char hint[] =  USER_NAME "@" USER_NAME "-STM32:~$ ";
 	int hint_length = sizeof(hint);
 	char *p = NULL;
+	size_t i = cur_his;
 
 	fdout = mq_open("/tmp/mqueue/out", 0);
 	fdin = open("/dev/tty0/in", 0);
 
-	for (;; cur_his = (cur_his + 1) % HISTORY_COUNT) {
+	for (;; i = cur_his = (cur_his + 1) % HISTORY_COUNT) {
 		p = cmd[cur_his];
 		write(fdout, hint, hint_length);
 
@@ -284,8 +285,39 @@ void serial_test_task()
 				}
 			}
 			else if (p - cmd[cur_his] < CMDBUF_SIZE - 1) {
-				*p++ = put_ch[0];
-				write(fdout, put_ch, 2);
+				if(put_ch[0] == '\033'){					//arrow key detection
+					read(fdin, put_ch, 1);
+					if(put_ch[0] == '['){
+						read(fdin, put_ch, 1);
+						if(put_ch[0] == 'A' || put_ch[0] == 'B'){		//up/down arrow key
+							if(put_ch[0] == 'A'? i : i < cur_his){				//browse history
+								while(p > cmd[cur_his]){	//delete current text
+									p--;
+									write(fdout, "\b \b", 4);
+								}
+								i += put_ch[0] == 'A'? -1 : 1;
+								if(put_ch[0] == 'A' || i != cur_his){
+									write(fdout, cmd[i], strlen(cmd[i])+1);
+									memcpy(cmd[cur_his],cmd[i], strlen(cmd[i])+1);
+									p = cmd[cur_his]+strlen(cmd[i]);
+								}else p = cmd[cur_his];
+							}
+						}else if(put_ch[0] == 'C'){	//right arrow key
+						}else if(put_ch[0] == 'D'){	//left arrow key
+						}else{
+							*p++ = '[';
+							*p++ = put_ch[0];
+							*p = '\0';
+							write(fdout, p-2, 3);
+						}
+					}else{
+						*p++ = put_ch[0];
+						write(fdout, put_ch, 2);
+					}
+				}else{
+					*p++ = put_ch[0];
+					write(fdout, put_ch, 2);
+				}
 			}
 		}
 		check_keyword();
