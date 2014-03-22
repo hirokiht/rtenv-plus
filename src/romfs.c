@@ -7,22 +7,6 @@
 #include "file.h"
 #include "string.h"
 
-struct romfs_file {
-    int fd;
-    int device;
-    int start;
-    size_t len;
-};
-
-struct romfs_entry {
-    uint32_t parent;
-    uint32_t prev;
-    uint32_t next;
-    uint32_t isdir;
-    uint32_t len;
-    uint8_t name[PATH_MAX];
-};
-
 int romfs_open_recur(int device, char *path, int this, struct romfs_entry *entry)
 {
     if (entry->isdir) {

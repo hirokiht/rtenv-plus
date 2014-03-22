@@ -717,14 +717,10 @@ void show_cat(int argc, char *argv[]){
 	int readfd = -1, i;
 	char buf[2] = {'\0'}, prev = '\0';
 	
-	if(argc <= 0)
-		return;
-	else if(argc == 1) /* fallback to stdin */
-        readfd = fdin;
-    else for(i = 1 ; i < argc ; i++){ /* open file of argv[1] */
-        if ((readfd = open(argv[i], 0)) < 0) { /* Open error */
+	for(i = 1 ; i < argc || argc == 1 ; i++){ /* open file of argv[1] */
+        if ((readfd = argc == 1? fdin : open(argv[i], 0)) < 0) { /* Open error */
             write(fdout, "cat: ", 6);
-            write(fdout, argv[1], strlen(argv[1]) + 1);
+            write(fdout, argv[i], strlen(argv[i]) + 1);
             write(fdout, ": No such file or directory\r\n", 31);
             return;
         }
@@ -735,9 +731,12 @@ void show_cat(int argc, char *argv[]){
     	}
     	if(prev == '\n')
     		write(fdout, "\r", 2);
+    	else if(prev != '\r')
+    		write(fdout, "\n\r", 3);
+    	if(argc == 1)
+    		break;
     }
 }
-
 
 void first()
 {
