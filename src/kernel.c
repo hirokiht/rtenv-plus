@@ -753,7 +753,7 @@ void show_ls(int argc, char *argv[]){
 		return;
 	}
 	for(i = 1 ; i < argc || argc == 1 ; i++){
-		if(argv[i][0] == '\\')
+		if(argv[i][0] == '/')
 			argv[i]++;
 		pos = argc == 1? 0 : romfs_open(device,argv[i],&entry);
 		if(pos == -1){
